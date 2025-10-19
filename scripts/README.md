@@ -57,9 +57,44 @@ photos:
 - If a photo is removed from the directory, it will be removed from the collection
 - If the cover photo is removed, the cover_path is automatically updated to the first remaining photo
 
+### `add-to-collection`
+
+Adds one or more photos to any collection (creates the collection if it doesn't exist).
+
+**Usage:**
+```bash
+./scripts/add-to-collection <collection-name> <absolute-photo-path> [absolute-photo-path...]
+```
+
+**Examples:**
+```bash
+# Single photo
+./scripts/add-to-collection street /Users/joshuaheiland/Projects/photography/photos/2025/seattle/street-scene.jpg
+
+# Multiple photos (space-separated)
+./scripts/add-to-collection street /path/to/photo1.jpg /path/to/photo2.jpg /path/to/photo3.jpg
+```
+
+**What it does:**
+- Converts absolute paths to relative paths from the `photos/` directory
+- Creates or updates `data/collections/<collection-name>.yaml`
+- Adds photos if not already present in the collection
+- Skips photos that are already in the collection
+- Preserves existing photos and their captions/alt text
+- Provides a summary showing which photos were added, skipped, or had errors
+
+**Notes:**
+- All photos must be located within the `photos/` directory
+- You can drag and drop multiple photo files into the terminal (separated by spaces)
+- The script validates that each photo file exists before adding it
+- Photos are added with empty caption and alt fields for you to fill in later
+- New collections are created with a default title (capitalized collection name)
+- The cover_path is set to the first photo added
+- The collection is only saved if at least one photo was successfully added
+
 ### `add-to-portfolio`
 
-Adds one or more photos to your portfolio collection.
+Convenience script that adds photos to your portfolio collection. This is a wrapper around `add-to-collection` with the collection name set to "portfolio".
 
 **Usage:**
 ```bash
@@ -76,15 +111,5 @@ Adds one or more photos to your portfolio collection.
 ```
 
 **What it does:**
-- Converts absolute paths to relative paths from the `photos/` directory
-- Adds photos to `data/collections/portfolio.yaml` if not already present
-- Skips photos that are already in the portfolio
-- Preserves existing photos and their captions/alt text
-- Provides a summary showing which photos were added, skipped, or had errors
-
-**Notes:**
-- All photos must be located within the `photos/` directory
-- You can drag and drop multiple photo files into the terminal (separated by spaces)
-- The script validates that each photo file exists before adding it
-- Photos are added with empty caption and alt fields for you to fill in later
-- The collection is only saved if at least one photo was successfully added
+- Same as `add-to-collection` but automatically uses the "portfolio" collection
+- See `add-to-collection` for full details

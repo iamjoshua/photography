@@ -18,22 +18,36 @@ def get_relative_photo_path(absolute_path, project_root):
         # Path is not within photos directory
         return None
 
-def load_portfolio_collection(collection_file):
-    """Load the portfolio collection file."""
-    if not os.path.exists(collection_file):
-        print(f"Error: Portfolio collection file not found at {collection_file}")
-        sys.exit(1)
+def load_or_create_collection(collection_file, collection_name):
+    """Load existing collection or create a new one."""
+    if os.path.exists(collection_file):
+        with open(collection_file, 'r') as f:
+            collection = yaml.safe_load(f)
+            if collection is None:
+                collection = create_new_collection(collection_name)
+    else:
+        collection = create_new_collection(collection_name)
 
-    with open(collection_file, 'r') as f:
-        collection = yaml.safe_load(f)
-        if collection is None or 'photos' not in collection:
-            print(f"Error: Invalid portfolio collection structure")
-            sys.exit(1)
+    # Ensure photos list exists
+    if 'photos' not in collection or collection['photos'] is None:
+        collection['photos'] = []
 
     return collection
 
-def add_photo_to_portfolio(collection, photo_path):
-    """Add photo to portfolio if not already present."""
+def create_new_collection(collection_name):
+    """Create a new collection structure."""
+    # Create title from collection name (capitalize words, replace hyphens)
+    title = collection_name.replace('-', ' ').title()
+
+    return {
+        'title': title,
+        'description': '',
+        'cover_path': '',
+        'photos': []
+    }
+
+def add_photo_to_collection(collection, photo_path):
+    """Add photo to collection if not already present."""
     # Check if photo already exists
     existing_paths = {photo['path'] for photo in collection['photos']}
 
@@ -55,23 +69,26 @@ def add_photo_to_portfolio(collection, photo_path):
 
 def save_collection(collection_file, collection):
     """Save collection to YAML file."""
+    os.makedirs(os.path.dirname(collection_file), exist_ok=True)
+
     with open(collection_file, 'w') as f:
         yaml.dump(collection, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: add_to_portfolio.py <photo-path> [photo-path...]")
+    if len(sys.argv) < 3:
+        print("Usage: add_to_collection.py <collection-name> <photo-path> [photo-path...]")
         sys.exit(1)
 
-    photo_paths_input = sys.argv[1:]
+    collection_name = sys.argv[1]
+    photo_paths_input = sys.argv[2:]
 
     # Get project root (2 levels up from this script)
     script_dir = Path(__file__).parent
     project_root = script_dir.parent.parent
 
-    # Load portfolio collection once
-    collection_file = project_root / 'data' / 'collections' / 'portfolio.yaml'
-    collection = load_portfolio_collection(collection_file)
+    # Load or create collection
+    collection_file = project_root / 'data' / 'collections' / f'{collection_name}.yaml'
+    collection = load_or_create_collection(collection_file, collection_name)
 
     # Track results
     added_photos = []
@@ -93,8 +110,8 @@ def main():
             errors.append(f"{relative_path} - file not found")
             continue
 
-        # Add photo to portfolio
-        added = add_photo_to_portfolio(collection, relative_path)
+        # Add photo to collection
+        added = add_photo_to_collection(collection, relative_path)
 
         if added:
             added_photos.append(relative_path)
@@ -106,7 +123,7 @@ def main():
         save_collection(collection_file, collection)
 
     # Report results
-    print(f"\n=== Portfolio Update Summary ===")
+    print(f"\n=== Collection '{collection_name}' Update Summary ===")
 
     if added_photos:
         print(f"\nAdded {len(added_photos)} photo(s):")
@@ -114,7 +131,7 @@ def main():
             print(f"  + {photo}")
 
     if skipped_photos:
-        print(f"\nSkipped {len(skipped_photos)} photo(s) (already in portfolio):")
+        print(f"\nSkipped {len(skipped_photos)} photo(s) (already in collection):")
         for photo in skipped_photos:
             print(f"  - {photo}")
 
@@ -123,7 +140,7 @@ def main():
         for error in errors:
             print(f"  ! {error}")
 
-    print(f"\nTotal photos in portfolio: {len(collection['photos'])}")
+    print(f"\nTotal photos in collection: {len(collection['photos'])}")
     print(f"Collection file: {collection_file}")
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Wrapper script for add_to_portfolio.py
+# Wrapper script that adds photos to the portfolio collection
+# This is a convenience wrapper around add_to_collection.py
 
 if [ -z "$1" ]; then
   echo "Usage: ./scripts/add-to-portfolio <photo-path> [photo-path...]"
@@ -9,4 +10,4 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SCRIPT_DIR/utils/add_to_portfolio.py" "$@"
+python3 "$SCRIPT_DIR/utils/add_to_collection.py" "portfolio" "$@"
