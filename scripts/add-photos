@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Wrapper script for add_photos.py
+
+if [ -z "$1" ]; then
+  echo "Usage: ./scripts/add-photos <collection-name>"
+  echo "Example: ./scripts/add-photos wa-state-fair"
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/add_photos.py" "$1"
