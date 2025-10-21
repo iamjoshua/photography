@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Wrapper script for ingest_photos.py
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/ingest_photos.py" "$@"

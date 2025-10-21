@@ -1,18 +1,253 @@
 # Photography Scripts
 
-Utility scripts for managing photo collections.
+Automated tools for managing a photography website portfolio.
+
+## Overview
+
+This repository manages photos and collections for a photography website. Photos are exported from Adobe Lightroom as JPGs with embedded metadata (keywords, ratings, locations), then organized into collections using these scripts.
+
+### How It Works
+
+**Scripts are organized in two layers:**
+
+1. **Bash scripts** (in `scripts/`) - Easy-to-call commands for daily use
+   - Simple interface: `./scripts/sync-collection portfolio`
+   - No Python knowledge required
+   - Just wrapper scripts that call the Python implementations
+
+2. **Python modules** (in `scripts/utils/`) - The actual implementation logic
+   - Handle complex operations (YAML parsing, metadata reading, filtering)
+   - Reusable across multiple scripts
+   - Easier to maintain and test than bash
+
+**Workflow:**
+- Tag and rate photos in Lightroom during editing
+- Export as JPGs with metadata
+- Run scripts to organize them into collections automatically
+- Collections are stored as YAML files for website consumption
 
 ## Setup
 
-These scripts require Python 3 and the `pyyaml` library.
+These scripts require Python 3 and several libraries.
 
 ### Install dependencies
 
 ```bash
-pip3 install pyyaml
+pip3 install pyyaml iptcinfo3 Pillow
 ```
 
+**Library purposes:**
+- `pyyaml` - Reading and writing collection YAML files
+- `iptcinfo3` - Reading IPTC metadata (keywords, location) from JPG files
+- `Pillow` - Reading EXIF metadata (date) from JPG files
+
+## Collection Types
+
+There are two types of collections:
+
+1. **Filtered Collections**: Define filter criteria (keywords, location, rating, etc.) and are automatically populated by the `sync-collection` script based on photo metadata
+2. **Manual Collections**: No filters, photos are manually added using `add-to-collection` or `add-photos`
+
 ## Scripts
+
+### `generate-photo-metadata-files`
+
+Generates YAML metadata files for all photos in the repository. Creates a mirrored directory structure in `data/photos/` with one YAML file per photo containing all metadata extracted from the image.
+
+**Usage:**
+```bash
+# Preview what would be created (dry run)
+./scripts/generate-photo-metadata-files --dry-run
+
+# Actually generate the YAML files
+./scripts/generate-photo-metadata-files
+```
+
+**What it does:**
+- Recursively scans all photos in `photos/` directory (excluding `exports/`)
+- Reads metadata from each photo using the `photo_metadata` module
+- Creates corresponding YAML files in `data/photos/` with the same directory structure
+- Each YAML file contains all metadata fields dynamically (keywords, location, rating, date, etc.)
+- Updates existing YAML files if they already exist
+- Future changes to the `PhotoMetadata` class are automatically reflected in output
+
+**Examples:**
+```bash
+# Preview what files would be created
+./scripts/generate-photo-metadata-files --dry-run
+
+# Generate all metadata files
+./scripts/generate-photo-metadata-files
+```
+
+**Directory structure created:**
+```
+data/photos/
+  2025/
+    seattle/
+      photo-1.yaml
+      photo-2.yaml
+    portland/
+      photo-3.yaml
+```
+
+**Example YAML output:**
+```yaml
+path: /path/to/photos/2025/seattle/photo-1.jpg
+keywords:
+- street
+- washington
+location:
+  sublocation: Pike Place Market
+  city: Seattle
+  state: Washington
+  country: USA
+rating: 4
+date: 2025:10:18 23:19:56
+```
+
+**Notes:**
+- Dynamically serializes all metadata fields without hardcoding
+- Future additions to `PhotoMetadata` or `Location` classes automatically appear in YAML
+- Uses `--dry-run` to preview changes before generating files
+- Processes all supported image formats (jpg, jpeg, png, gif)
+
+### `ingest-photos`
+
+Processes photos from the exports folder and organizes them into year/location directories based on metadata.
+
+**Usage:**
+```bash
+# Preview what would happen (dry run)
+./scripts/ingest-photos --dry-run
+
+# Actually move the photos
+./scripts/ingest-photos
+```
+
+**What it does:**
+- Scans all photos in `photos/exports/`
+- Reads EXIF date to determine year (e.g., "2025")
+- Reads IPTC City to determine location (e.g., "seattle")
+- Moves photos to `photos/YYYY/location/filename.jpg`
+- Creates directories as needed
+- Falls back to "unknown-year" or "unknown-location" if metadata is missing
+- Replaces existing files if re-exporting edited photos (logs replacements)
+
+**Examples:**
+```bash
+# First, see what would happen
+./scripts/ingest-photos --dry-run
+
+# Then actually move the files
+./scripts/ingest-photos
+```
+
+**Directory structure created:**
+```
+photos/
+  2025/
+    seattle/
+      photo-1.jpg
+      photo-2.jpg
+    portland/
+      photo-3.jpg
+  2024/
+    unknown-location/
+      photo-4.jpg
+```
+
+**Notes:**
+- Location names are sanitized (lowercased, spaces become hyphens)
+- If the exports folder doesn't exist, it will be created
+- Use `--dry-run` to preview changes before moving files
+- Photos are moved (not copied) from exports to their destination
+- Requires `Pillow` library for EXIF date reading
+
+### `create-collection`
+
+Creates a new collection file with optional filter criteria.
+
+**Usage:**
+```bash
+./scripts/create-collection <collection-name> [options]
+```
+
+**Options:**
+- `--title "Title"` - Display title (defaults to capitalized collection name)
+- `--description "Description"` - Collection description
+- `--keywords "keyword1, keyword2"` - Comma-separated keywords from photo IPTC metadata
+- `--location "Location"` - Location from photo IPTC metadata
+- `--rating "4+"` - Minimum star rating (e.g., "3+", "4+", "5")
+- `--date "2025"` - Date filter (e.g., "2025", "2025-06", "2025-06-15")
+
+**Examples:**
+```bash
+# Manual collection (no filters)
+./scripts/create-collection my-favorites --title "My Favorites"
+
+# Filtered collection by keywords
+./scripts/create-collection street-photography --keywords "street, urban" --location "Seattle" --rating "4+"
+
+# Filtered by date
+./scripts/create-collection year-2025 --date "2025"
+```
+
+**What it does:**
+- Creates `data/collections/<collection-name>.yaml`
+- If filters are provided, creates a filtered collection that can be synced with `sync-collection`
+- If no filters are provided, creates a manual collection for use with `add-to-collection`
+- Will not overwrite existing collections
+
+**Notes:**
+- Filtered collections use photo metadata (IPTC keywords, location, rating, date)
+- Multiple keywords are OR'd (photo must have at least one)
+- All filter criteria are AND'd together
+- Run `sync-collection` after creating a filtered collection to populate it
+
+### `sync-collection`
+
+Scans all JPG photos and populates filtered collections based on their metadata criteria.
+
+**Usage:**
+```bash
+# Sync a single collection
+./scripts/sync-collection <collection-name>
+
+# Sync all filtered collections
+./scripts/sync-collection --all
+```
+
+**Examples:**
+```bash
+# Sync one collection
+./scripts/sync-collection street-photography
+
+# Sync all collections that have filters
+./scripts/sync-collection --all
+```
+
+**What it does:**
+- Scans all JPG files in the `photos/` directory (recursively)
+- Reads IPTC and EXIF metadata from each photo
+- For each filtered collection, finds photos matching the filter criteria
+- Replaces the photos list with current matches (sync mode)
+- Updates the cover_path to the first photo if needed
+- Skips manual collections (those without a `filters` field)
+
+**Metadata reading:**
+- **Keywords**: IPTC Keywords field (set in Lightroom)
+- **Location**: IPTC City field (set in Lightroom)
+- **Date**: EXIF DateTime/DateTimeOriginal (from photo EXIF)
+- **Rating**: Currently not supported (Lightroom typically stores this in XMP)
+
+**Notes:**
+- Only works with filtered collections (collections that have a `filters` field)
+- Manual collections are skipped automatically
+- Uses replace mode: photos list is completely replaced with current matches
+- Keywords are case-insensitive and OR'd (photo needs at least one matching keyword)
+- All other filter criteria are AND'd together
+- Requires `iptcinfo3` and `Pillow` libraries to be installed
 
 ### `add-photos`
 

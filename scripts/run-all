@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Master photo management script
+# Runs all photo management tasks in the correct order:
+# 1. Ingest photos from exports folder
+# 2. Generate metadata YAML files for all photos
+# 3. Sync all filtered collections
+#
+# Usage: ./scripts/run-all [--dry-run]
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Parse arguments
+DRY_RUN=""
+if [ "$1" == "--dry-run" ]; then
+    DRY_RUN="--dry-run"
+    echo "DRY RUN MODE - No changes will be made"
+    echo ""
+fi
+
+echo "============================================================"
+echo "PHOTO MANAGEMENT - Running all tasks"
+echo "============================================================"
+echo ""
+
+# Step 1: Ingest photos
+echo "============================================================"
+echo "STEP 1: Ingesting photos from exports"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/ingest-photos" $DRY_RUN
+echo ""
+
+# Step 2: Generate metadata files
+echo "============================================================"
+echo "STEP 2: Generating metadata files"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/generate-photo-metadata-files" $DRY_RUN
+echo ""
+
+# Step 3: Sync collections
+echo "============================================================"
+echo "STEP 3: Syncing filtered collections"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/sync-collection" --all $DRY_RUN
+echo ""
+
+echo "============================================================"
+echo "All photo management tasks completed"
+echo "============================================================"
