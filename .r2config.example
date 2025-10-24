@@ -1,0 +1,22 @@
+# Cloudflare R2 Configuration
+# Copy this file to .r2config and fill in your credentials
+#
+# To get these values:
+# 1. Go to Cloudflare dashboard > R2 > Manage R2 API Tokens
+# 2. Create an API token with "Object Read & Write" permissions
+# 3. Copy the "Access Key ID" and "Secret Access Key" shown after creation
+# 4. Your Account ID is in the dashboard URL or under Account > Account ID
+# 5. Bucket name is the name of your R2 bucket (e.g., "photography")
+
+[r2]
+# Your Cloudflare Account ID (32 character hex string)
+account_id = your-account-id-here
+
+# Access Key ID from R2 API Token (looks like: 325abc...)
+access_key_id = your-access-key-id-here
+
+# Secret Access Key from R2 API Token (long string, shown only once during token creation)
+secret_access_key = your-secret-access-key-here
+
+# Name of your R2 bucket
+bucket_name = your-bucket-name-here
