@@ -96,6 +96,13 @@ class PhotoMetadata:
         location: Location object with city, state, country or None
         rating: Star rating (1-5) or None
         date: Date string (e.g., "2025:10:18 22:33:24") or None
+        camera_make: Camera manufacturer (e.g., "SONY") or None
+        camera_model: Camera model (e.g., "ILCE-7CM2") or None
+        lens_model: Lens model or None
+        focal_length: Focal length in mm (e.g., "50.0") or None
+        aperture: F-stop value (e.g., "2.8") or None
+        shutter_speed: Exposure time (e.g., "1/125") or None
+        iso: ISO speed (e.g., "400") or None
     """
     def __init__(self, path):
         self.path = path
@@ -103,9 +110,16 @@ class PhotoMetadata:
         self.location = None
         self.rating = None
         self.date = None
+        self.camera_make = None
+        self.camera_model = None
+        self.lens_model = None
+        self.focal_length = None
+        self.aperture = None
+        self.shutter_speed = None
+        self.iso = None
 
     def __repr__(self):
-        return f"PhotoMetadata(path={self.path}, keywords={self.keywords}, location={self.location}, rating={self.rating}, date={self.date})"
+        return f"PhotoMetadata(path={self.path}, keywords={self.keywords}, location={self.location}, rating={self.rating}, date={self.date}, camera={self.camera_make} {self.camera_model})"
 
 
 # ============================================================================
@@ -247,33 +261,96 @@ def _read_xmp_from_jpg(photo_path):
         return None
 
 
-def _read_exif_date(photo_path):
-    """Read date from EXIF metadata (private helper).
+def _read_exif_data(photo_path):
+    """Read EXIF data from photo (private helper).
 
     Args:
         photo_path: Path to JPG file
 
     Returns:
-        Date string (e.g., "2025:10:18 22:33:24") or None
+        Dictionary with EXIF data or empty dict
     """
     if not Image:
-        return None
+        return {}
+
+    exif_data = {}
 
     try:
         img = Image.open(photo_path)
         exif = img.getexif()
 
-        if exif:
-            # Get date from DateTime or DateTimeOriginal
-            for tag_id, value in exif.items():
+        if not exif:
+            return {}
+
+        # Get EXIF IFD (where most camera settings are stored)
+        exif_ifd = exif.get_ifd(0x8769)  # EXIF IFD tag
+
+        # Helper function to process tags from either main EXIF or EXIF IFD
+        def process_tags(tag_dict):
+            for tag_id, value in tag_dict.items():
                 tag_name = TAGS.get(tag_id, tag_id)
-                if tag_name == 'DateTime' or tag_name == 'DateTimeOriginal':
-                    return value
+
+                # Date
+                if tag_name in ('DateTime', 'DateTimeOriginal') and 'date' not in exif_data:
+                    exif_data['date'] = value
+
+                # Camera make and model
+                elif tag_name == 'Make':
+                    exif_data['camera_make'] = value.strip() if isinstance(value, str) else value
+                elif tag_name == 'Model':
+                    exif_data['camera_model'] = value.strip() if isinstance(value, str) else value
+
+                # Lens
+                elif tag_name == 'LensModel':
+                    exif_data['lens_model'] = value.strip() if isinstance(value, str) else value
+
+                # Focal length
+                elif tag_name == 'FocalLength':
+                    if isinstance(value, tuple):
+                        exif_data['focal_length'] = round(value[0] / value[1], 1) if value[1] != 0 else float(value[0])
+                    else:
+                        # Handle IFDRational, int, float, or any numeric type
+                        exif_data['focal_length'] = round(float(value), 1)
+
+                # Aperture (FNumber)
+                elif tag_name == 'FNumber':
+                    if isinstance(value, tuple):
+                        exif_data['aperture'] = round(value[0] / value[1], 1) if value[1] != 0 else float(value[0])
+                    else:
+                        # Handle IFDRational, int, float, or any numeric type
+                        exif_data['aperture'] = round(float(value), 1)
+
+                # Shutter speed (ExposureTime) - keep as string
+                elif tag_name == 'ExposureTime':
+                    if isinstance(value, tuple):
+                        if value[0] == 1:
+                            exif_data['shutter_speed'] = f"1/{value[1]}"
+                        else:
+                            exif_data['shutter_speed'] = f"{value[0] / value[1]:.2f}" if value[1] != 0 else str(value[0])
+                    else:
+                        # Handle IFDRational, int, float, or any numeric type
+                        val = float(value)
+                        if val < 1:
+                            # Convert to fraction for fast shutter speeds
+                            exif_data['shutter_speed'] = f"1/{int(1/val)}"
+                        else:
+                            exif_data['shutter_speed'] = f"{val:.2f}"
+
+                # ISO
+                elif tag_name in ('ISOSpeedRatings', 'ISO'):
+                    exif_data['iso'] = int(value)
+
+        # Process main EXIF tags
+        process_tags(exif)
+
+        # Process EXIF IFD tags (where camera settings usually are)
+        if exif_ifd:
+            process_tags(exif_ifd)
 
     except Exception as e:
         pass
 
-    return None
+    return exif_data
 
 
 # ============================================================================
@@ -328,8 +405,17 @@ def get_metadata(photo_path):
         if 'rating' in xmp_data:
             metadata.rating = xmp_data['rating']
 
-    # Read date from EXIF
-    metadata.date = _read_exif_date(photo_path)
+    # Read EXIF data (camera info, date, etc.)
+    exif_data = _read_exif_data(photo_path)
+    if exif_data:
+        metadata.date = exif_data.get('date')
+        metadata.camera_make = exif_data.get('camera_make')
+        metadata.camera_model = exif_data.get('camera_model')
+        metadata.lens_model = exif_data.get('lens_model')
+        metadata.focal_length = exif_data.get('focal_length')
+        metadata.aperture = exif_data.get('aperture')
+        metadata.shutter_speed = exif_data.get('shutter_speed')
+        metadata.iso = exif_data.get('iso')
 
     return metadata
 

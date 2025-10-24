@@ -327,6 +327,41 @@ Adds one or more photos to any collection (creates the collection if it doesn't 
 - The cover_path is set to the first photo added
 - The collection is only saved if at least one photo was successfully added
 
+### `add-collection-from-exports`
+
+Quickly build a collection from photos exported from Lightroom. This script intelligently handles photos that are already ingested vs. new photos, avoiding duplication while keeping version control clean.
+
+**Usage:**
+```bash
+# Export collection from Lightroom to photos/exports/
+./scripts/add-collection-from-exports <collection-name>
+```
+
+**Examples:**
+```bash
+# Export a curated set from Lightroom, then add to collection
+./scripts/add-collection-from-exports my-favorites
+
+# Build a new collection from fresh exports
+./scripts/add-collection-from-exports client-portfolio
+```
+
+**What it does:**
+- Scans all photos in `photos/exports/`
+- For each photo:
+  - Checks if photo already exists in the `photos/` directory (using ingestion logic to determine expected location)
+  - **If already ingested**: Adds to collection and deletes from exports (avoids duplication)
+  - **If not yet ingested**: Ingests photo first (moves to proper year/location directory), then adds to collection
+- Creates collection if it doesn't exist (manual collection, no filters)
+- Updates existing collection if it already exists
+
+**Workflow:**
+1. Select photos in Lightroom (e.g., a curated collection)
+2. Export to `photos/exports/` directory
+3. Run this script with your desired collection name
+4. Photos are organized and added to collection automatically
+
+
 ### `add-to-portfolio`
 
 Convenience script that adds photos to your portfolio collection. This is a wrapper around `add-to-collection` with the collection name set to "portfolio".
