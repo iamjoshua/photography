@@ -383,3 +383,61 @@ Convenience script that adds photos to your portfolio collection. This is a wrap
 **What it does:**
 - Same as `add-to-collection` but automatically uses the "portfolio" collection
 - See `add-to-collection` for full details
+
+### `sync-to-r2`
+
+Syncs the local photos directory to Cloudflare R2 object storage. Ensures R2 perfectly mirrors your local directory by uploading new files, deleting removed files, and replacing updated files.
+
+**Prerequisites:**
+- Install boto3: `pip3 install boto3`
+- Create `.r2config` file in project root with your Cloudflare R2 credentials (copy from `.r2config.example`)
+
+**Usage:**
+```bash
+# Sync all of photos/ directory to R2 bucket root
+./scripts/sync-to-r2
+
+# Sync a specific subdirectory (e.g., photos/dev/ to dev/ in R2)
+./scripts/sync-to-r2 dev
+
+# Sync a specific year (e.g., photos/2025/ to 2025/ in R2)
+./scripts/sync-to-r2 2025
+```
+
+**Examples:**
+```bash
+# Test with dev folder first
+./scripts/sync-to-r2 dev
+
+# Sync entire photos directory to R2
+./scripts/sync-to-r2
+
+# Sync just 2025 photos
+./scripts/sync-to-r2 2025
+```
+
+**What it does:**
+- Compares local files against R2 objects using the S3-compatible API
+- **Uploads**: New files that exist locally but not in R2
+- **Deletes**: Files in R2 that no longer exist locally
+- **Re-uploads**: Files where the local version is newer (based on modification time)
+- Shows a sync plan before executing any changes
+- Handles pagination automatically for large directories
+
+**Configuration:**
+The `.r2config` file should contain:
+```ini
+[r2]
+account_id = your-cloudflare-account-id
+access_key_id = your-r2-access-key-id
+secret_access_key = your-r2-secret-access-key
+bucket_name = your-bucket-name
+```
+
+**Notes:**
+- The R2 bucket mirrors the **contents** of `photos/`, not `photos/` itself as a folder
+- For example, `photos/2025/image.jpg` is stored as `2025/image.jpg` in R2
+- Subdirectory syncs (e.g., `./scripts/sync-to-r2 dev`) sync `photos/dev/` to `dev/` in R2
+- Uses 1-second tolerance when comparing modification times to account for filesystem differences
+- Skips hidden files (files starting with `.`)
+- Safe to run multiple times - only syncs changes
