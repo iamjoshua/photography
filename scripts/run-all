@@ -5,6 +5,7 @@
 # 1. Ingest photos from exports folder
 # 2. Generate metadata YAML files for all photos
 # 3. Sync all filtered collections
+# 4. Sync photos to Cloudflare R2
 #
 # Usage: ./scripts/run-all [--dry-run]
 
@@ -46,6 +47,21 @@ echo "============================================================"
 echo ""
 "$SCRIPT_DIR/sync-collection" --all $DRY_RUN
 echo ""
+
+# Step 4: Sync to R2 (only if not dry-run)
+if [ -z "$DRY_RUN" ]; then
+    echo "============================================================"
+    echo "STEP 4: Syncing photos to Cloudflare R2"
+    echo "============================================================"
+    echo ""
+    "$SCRIPT_DIR/sync-to-r2"
+    echo ""
+else
+    echo "============================================================"
+    echo "STEP 4: Syncing to R2 (skipped in dry-run mode)"
+    echo "============================================================"
+    echo ""
+fi
 
 echo "============================================================"
 echo "All photo management tasks completed"
