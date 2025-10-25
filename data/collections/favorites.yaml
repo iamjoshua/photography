@@ -1,6 +1,6 @@
 title: Favorites
 description: ''
-cover_path: 2025/washington/puyallup/Puyallup-Washington-835.jpg
+cover_path: 2025/washington/tacoma/Tacoma-Washington-65.jpg
 photos:
 - path: 2025/washington/puyallup/Puyallup-Washington-835.jpg
   caption: ''
@@ -42,5 +42,8 @@ photos:
   caption: ''
   alt: ''
 - path: 2025/washington/seattle/Seattle-Washington-452.jpg
+  caption: ''
+  alt: ''
+- path: 2025/washington/seattle/Seattle-Washington--2917.jpg
   caption: ''
   alt: ''
