@@ -10,4 +10,4 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SCRIPT_DIR/utils/add_to_collection.py" "portfolio" "$@"
+python3 "$SCRIPT_DIR/utils/add_to_collection.py" "favorites" "$@"
