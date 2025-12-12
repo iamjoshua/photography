@@ -7,4 +7,5 @@
 #   ./scripts/sync-to-r2 dev      # sync photos/dev/ to dev/
 #   ./scripts/sync-to-r2 2025     # sync photos/2025/ to 2025/
 
-python3 scripts/utils/sync_to_r2.py "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/sync_to_r2.py" "$@"

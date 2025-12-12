@@ -285,15 +285,19 @@ def sync_directory(local_dir, r2_prefix=''):
     print("✓ Sync complete!")
 
 def main():
+    # Get project root (same as config loading)
+    script_path = Path(__file__).resolve()
+    project_root = script_path.parent.parent.parent
+
     # Determine what to sync
     if len(sys.argv) == 1:
         # No argument: sync entire photos directory
-        local_dir = 'photos'
+        local_dir = project_root / 'photos'
         r2_prefix = ''
     elif len(sys.argv) == 2:
         # Subdirectory provided: sync photos/<subdir> to <subdir>/ in R2
         subdir = sys.argv[1]
-        local_dir = f'photos/{subdir}'
+        local_dir = project_root / 'photos' / subdir
         r2_prefix = subdir
     else:
         print("Usage: python3 scripts/utils/sync_to_r2.py [subdirectory]", file=sys.stderr)
