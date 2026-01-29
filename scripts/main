@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Main entry point for the photo management workflow.
+#
+# This script acts as a router to the current workflow. As the project
+# evolves and new collections or workflows are added, this file should
+# be updated to reflect the current process. The goal is to always be
+# able to run ./scripts/main and have it do the right thing.
+#
+# Current workflow:
+#   Import photos from Lightroom exports directly into the favorites
+#   collection (portfolio). This ingests photos, adds them to favorites,
+#   generates metadata, and syncs to R2.
+#
+# Usage: ./scripts/main
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+"$SCRIPT_DIR/add-exports-to-portfolio"

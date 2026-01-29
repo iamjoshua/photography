@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Add photos from exports to the portfolio (favorites) collection.
+# Handles the full workflow:
+#   1. Ingest photos from exports (move to photos/YYYY/location/)
+#   2. Add ingested photos to the favorites collection
+#   3. Generate metadata YAML files for all photos
+#   4. Sync photos to Cloudflare R2
+#
+# Usage: ./scripts/add-exports-to-portfolio
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "============================================================"
+echo "Adding exports to portfolio"
+echo "============================================================"
+echo ""
+
+# Step 1+2: Ingest from exports and add to favorites collection
+echo "============================================================"
+echo "STEP 1: Ingesting exports and adding to favorites"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/add-collection-from-exports" favorites
+RESULT=$?
+echo ""
+
+if [ $RESULT -ne 0 ]; then
+    echo "Error during ingest/collection step. Stopping."
+    exit 1
+fi
+
+# Step 3: Generate metadata files
+echo "============================================================"
+echo "STEP 2: Generating metadata files"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/generate-photo-metadata-files"
+echo ""
+
+# Step 4: Sync to R2
+echo "============================================================"
+echo "STEP 3: Syncing photos to Cloudflare R2"
+echo "============================================================"
+echo ""
+"$SCRIPT_DIR/sync-to-r2"
+echo ""
+
+echo "============================================================"
+echo "Done! Photos are ingested, in favorites, and uploaded to R2."
+echo "============================================================"
