@@ -7,7 +7,7 @@ Some of my photos
 2. Run `./scripts/main`
 3. Push to GitHub to trigger Vercel rebuild
 
-That's it. The `main` script is the single entry point for the current workflow. Right now it imports exported photos directly into the favorites collection (portfolio), generates metadata, and uploads to R2. As new collections and workflows are added, `main` will be updated to route to the right process.
+That's it. The `main` script is the single entry point for the current workflow. Right now it imports exported photos directly into the favorites collection (portfolio), generates metadata, builds resized webp variants under `r2/`, and syncs `r2/` to Cloudflare R2. As new collections and workflows are added, `main` will be updated to route to the right process.
 
 ## Create a Filtered Collection
 

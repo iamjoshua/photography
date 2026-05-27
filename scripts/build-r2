@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Build r2/small and r2/large webp variants for every photo under photos/.
+# The r2/ directory mirrors what will be uploaded to R2.
+# Local only — does not upload.
+#
+# Usage:
+#   ./scripts/build-r2
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/build_r2.py" "$@"

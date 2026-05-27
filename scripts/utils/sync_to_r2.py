@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
 
 """
-Sync local photos directory to Cloudflare R2.
+Sync local r2/ directory to Cloudflare R2.
+
+The r2/ directory is the canonical local mirror of the bucket: whatever lives
+there is exactly what's on R2. Originals in photos/ are not uploaded — they're
+just inputs for build-r2.
 
 Reads configuration from .r2config file in the project root.
 
-This script ensures R2 perfectly mirrors the local directory by:
+This script ensures R2 perfectly mirrors r2/ by:
 - Uploading new files that exist locally but not in R2
 - Deleting files from R2 that no longer exist locally
 - Re-uploading files where local version is newer
 
 Usage:
-    # Sync the dev folder (for testing)
-    python3 scripts/utils/sync_to_r2.py photos/dev
+    # Sync all of r2/ to the bucket
+    python3 scripts/utils/sync_to_r2.py
 
-    # Later: sync entire photos directory
-    python3 scripts/utils/sync_to_r2.py photos
+    # Sync only r2/small/ to small/ in the bucket
+    python3 scripts/utils/sync_to_r2.py small
 """
 
 import os
 import sys
+import mimetypes
 import configparser
 from pathlib import Path
 from datetime import datetime, timezone
 import boto3
 from botocore.client import Config
+
+CACHE_CONTROL = 'public, max-age=31536000, immutable'
 
 def load_r2_config():
     """Load R2 configuration from .r2config file."""
@@ -148,12 +155,17 @@ def get_local_files(directory, base_prefix):
 def upload_file(client, bucket_name, local_path, r2_key):
     """Upload a file to R2."""
     try:
+        content_type, _ = mimetypes.guess_type(str(local_path))
         with open(local_path, 'rb') as f:
-            client.put_object(
-                Bucket=bucket_name,
-                Key=r2_key,
-                Body=f
-            )
+            kwargs = {
+                'Bucket': bucket_name,
+                'Key': r2_key,
+                'Body': f,
+                'CacheControl': CACHE_CONTROL,
+            }
+            if content_type:
+                kwargs['ContentType'] = content_type
+            client.put_object(**kwargs)
         return True
     except Exception as e:
         print(f"Error uploading {r2_key}: {e}", file=sys.stderr)
@@ -291,21 +303,21 @@ def main():
 
     # Determine what to sync
     if len(sys.argv) == 1:
-        # No argument: sync entire photos directory
-        local_dir = project_root / 'photos'
+        # No argument: sync entire r2/ directory
+        local_dir = project_root / 'r2'
         r2_prefix = ''
     elif len(sys.argv) == 2:
-        # Subdirectory provided: sync photos/<subdir> to <subdir>/ in R2
+        # Subdirectory provided: sync r2/<subdir> to <subdir>/ in R2
         subdir = sys.argv[1]
-        local_dir = project_root / 'photos' / subdir
+        local_dir = project_root / 'r2' / subdir
         r2_prefix = subdir
     else:
         print("Usage: python3 scripts/utils/sync_to_r2.py [subdirectory]", file=sys.stderr)
         print("", file=sys.stderr)
         print("Examples:", file=sys.stderr)
-        print("  python3 scripts/utils/sync_to_r2.py          # sync all of photos/", file=sys.stderr)
-        print("  python3 scripts/utils/sync_to_r2.py dev      # sync photos/dev/ to dev/", file=sys.stderr)
-        print("  python3 scripts/utils/sync_to_r2.py 2025     # sync photos/2025/ to 2025/", file=sys.stderr)
+        print("  python3 scripts/utils/sync_to_r2.py          # sync all of r2/", file=sys.stderr)
+        print("  python3 scripts/utils/sync_to_r2.py small    # sync r2/small/ to small/", file=sys.stderr)
+        print("  python3 scripts/utils/sync_to_r2.py large    # sync r2/large/ to large/", file=sys.stderr)
         sys.exit(1)
 
     try:
