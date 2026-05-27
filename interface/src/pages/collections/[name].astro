@@ -1,0 +1,143 @@
+---
+import Layout from '../../components/Layout.astro';
+import PhotoGrid from '../../components/PhotoGrid.astro';
+import { getCollection } from '../../lib/collections';
+import { listPhotos } from '../../lib/catalog';
+import { stripExtension } from '../../lib/paths';
+
+const name = Astro.params.name!;
+const collection = await getCollection(name);
+if (!collection) return Astro.redirect('/');
+
+const allPhotos = await listPhotos();
+const memberIds = new Set(collection.photos.map((p) => stripExtension(p.path)));
+const photos = allPhotos.filter((p) => memberIds.has(p.id));
+---
+
+<Layout title={`${collection.title || name} — collection`} activeCollection={name}>
+  <header class="head">
+    <div class="title-row">
+      <h1
+        id="collection-title"
+        contenteditable="plaintext-only"
+        spellcheck="false"
+        data-placeholder="Untitled collection"
+      >{collection.title}</h1>
+      <span class="count">{photos.length}</span>
+    </div>
+    <p
+      id="collection-description"
+      class="desc"
+      contenteditable="plaintext-only"
+      spellcheck="false"
+      data-placeholder="Add a description…"
+    >{collection.description}</p>
+    <div id="save-status" class="save-status" aria-live="polite"></div>
+  </header>
+
+  <PhotoGrid
+    photos={photos}
+    collectionContext={name}
+    emptyText="No photos in this collection yet."
+  />
+
+  <script define:vars={{ name }}>
+    const title = document.getElementById('collection-title');
+    const desc = document.getElementById('collection-description');
+    const status = document.getElementById('save-status');
+
+    let timer;
+    let lastSentTitle = title.textContent ?? '';
+    let lastSentDesc = desc.textContent ?? '';
+
+    function schedule() {
+      clearTimeout(timer);
+      status.textContent = 'Editing…';
+      timer = setTimeout(save, 600);
+    }
+
+    async function save() {
+      const t = title.textContent?.trim() ?? '';
+      const d = desc.textContent?.trim() ?? '';
+      if (t === lastSentTitle && d === lastSentDesc) {
+        status.textContent = '';
+        return;
+      }
+      status.textContent = 'Saving…';
+      const res = await fetch(`/api/collections/${name}/update`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: t, description: d }),
+      });
+      if (res.ok) {
+        lastSentTitle = t;
+        lastSentDesc = d;
+        status.textContent = 'Saved';
+        setTimeout(() => {
+          if (status.textContent === 'Saved') status.textContent = '';
+        }, 1500);
+      } else {
+        status.textContent = 'Save failed';
+      }
+    }
+
+    title.addEventListener('input', schedule);
+    desc.addEventListener('input', schedule);
+    title.addEventListener('blur', save);
+    desc.addEventListener('blur', save);
+  </script>
+</Layout>
+
+<style>
+  .head { margin-bottom: 26px; }
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    outline: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-left: -6px;
+    transition: background var(--transition);
+  }
+  h1:hover { background: var(--surface); }
+  h1:focus { background: var(--surface); }
+  h1[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-faint);
+  }
+  .desc {
+    margin: 6px 0 0 -6px;
+    padding: 2px 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    outline: none;
+    border-radius: 4px;
+    min-height: 1.4em;
+    max-width: 720px;
+    transition: background var(--transition);
+  }
+  .desc:hover { background: var(--surface); }
+  .desc:focus { background: var(--surface); }
+  .desc[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-faint);
+  }
+  .count {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .save-status {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-faint);
+    height: 14px;
+  }
+</style>

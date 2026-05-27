@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Main entry point for the photo-management workflow.
+#
+# Routes to the default workflow: ingest imports into the favorites
+# collection, then publish to R2. As new top-level workflows are added,
+# this file should be updated to reflect the canonical user flow.
+#
+# Usage: ./scripts/workflows/main
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+"$SCRIPT_DIR/ingest-and-sync" --collection favorites

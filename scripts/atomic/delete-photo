@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Cascade-delete a photo from the entire portfolio.
+#
+# Usage:
+#   ./scripts/delete-photo <photo-path>
+
+if [ -z "$1" ]; then
+  echo "Usage: ./scripts/delete-photo <photo-path>"
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/delete_photo.py" "$@"

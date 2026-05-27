@@ -1,0 +1,288 @@
+---
+import type { Collection } from '../types';
+
+interface Props {
+  importCount: number;
+  collections: Collection[];
+}
+
+const { importCount, collections } = Astro.props;
+---
+
+<div class="toolbar" data-import-toolbar>
+  <div class="lead">
+    <span class="lead-count">{importCount}</span>
+    <span class="lead-tail">pending {importCount === 1 ? 'image' : 'images'}</span>
+  </div>
+  <div class="actions">
+    <button class="btn" data-ingest data-collection="">Ingest only</button>
+    <div class="picker">
+      <button class="btn btn-picker" data-picker-trigger>
+        Ingest and add to
+        <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" />
+        </svg>
+      </button>
+      <div class="picker-menu" data-picker-menu>
+        {
+          collections.length === 0 ? (
+            <div class="picker-empty">No collections yet.</div>
+          ) : (
+            collections.map((c) => (
+              <button class="picker-item" data-ingest data-collection={c.name}>
+                {c.title || c.name}
+              </button>
+            ))
+          )
+        }
+      </div>
+    </div>
+    <span class="status" data-status>
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="status-text" data-status-text></span>
+    </span>
+  </div>
+</div>
+
+<script>
+  const STEP_LABELS: Record<string, string> = {
+    'ingest-photos': 'Ingesting photos from imports',
+    'add-to-collection': 'Adding to collection',
+    'generate-photo-metadata-files': 'Generating metadata',
+    'build-r2': 'Building R2 variants (small + large webp)',
+    'sync-to-r2': 'Uploading to Cloudflare R2 — this can take a moment',
+  };
+
+  const toolbar = document.querySelector<HTMLElement>('[data-import-toolbar]');
+  if (toolbar) initToolbar(toolbar);
+
+  function initToolbar(el: HTMLElement) {
+    const status = el.querySelector<HTMLElement>('[data-status]');
+    const statusText = el.querySelector<HTMLElement>('[data-status-text]');
+    const pickerTrigger = el.querySelector<HTMLButtonElement>('[data-picker-trigger]');
+    const pickerMenu = el.querySelector<HTMLElement>('[data-picker-menu]');
+
+    function setBusy(label: string) {
+      el.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = true));
+      status?.classList.add('busy');
+      if (statusText) statusText.textContent = label;
+    }
+    function updateStatus(label: string) {
+      if (statusText) statusText.textContent = label;
+    }
+    function clearBusy() {
+      el.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = false));
+      status?.classList.remove('busy');
+      if (statusText) statusText.textContent = '';
+    }
+
+    pickerTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pickerMenu?.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!pickerMenu?.contains(e.target as Node)) {
+        pickerMenu?.classList.remove('open');
+      }
+    });
+
+    el.querySelectorAll<HTMLButtonElement>('[data-ingest]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const collection = btn.dataset.collection || '';
+        pickerMenu?.classList.remove('open');
+        void runIngest(collection);
+      });
+    });
+
+    async function runIngest(collection: string) {
+      setBusy('Starting…');
+      let res: Response;
+      try {
+        res = await fetch('/api/imports/import', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ collection: collection || null }),
+        });
+      } catch (err) {
+        clearBusy();
+        alert(`Ingest request failed:\n\n${String(err)}`);
+        return;
+      }
+
+      if (!res.ok || !res.body) {
+        clearBusy();
+        alert(`Ingest failed:\n\n${await res.text().catch(() => 'No response body')}`);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let exitCode: number | null = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line) continue;
+          if (line.startsWith('__DONE__:')) {
+            exitCode = parseInt(line.slice('__DONE__:'.length), 10);
+            continue;
+          }
+          // Each `--- step-name ---` marker in the workflow output advances the status.
+          const step = line.match(/^---\s+([\w-]+)\s+---$/);
+          if (step) {
+            updateStatus(STEP_LABELS[step[1]] ?? step[1]);
+          }
+        }
+      }
+
+      if (exitCode === 0) {
+        updateStatus('Done.');
+        location.href = collection ? `/collections/${collection}` : '/';
+      } else {
+        clearBusy();
+        alert(`Ingest failed (exit ${exitCode ?? '?'}). Check terminal for details.`);
+      }
+    }
+  }
+</script>
+
+<style>
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    margin-bottom: 26px;
+  }
+  .lead {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .lead-count {
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition:
+      background var(--transition),
+      border-color var(--transition);
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--surface);
+    border-color: var(--border-strong);
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+  }
+  .btn-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .picker {
+    position: relative;
+  }
+  .picker-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 200px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 4px;
+    display: none;
+    z-index: 50;
+  }
+  .picker-menu.open {
+    display: block;
+  }
+  .picker-item {
+    all: unset;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .picker-item:hover:not(:disabled) {
+    background: var(--surface);
+  }
+  .picker-item:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .picker-empty {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-style: italic;
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 6px;
+    min-width: 180px;
+  }
+  .spinner {
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid var(--border-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .status.busy .spinner {
+    opacity: 1;
+    animation: pm-spin 0.7s linear infinite;
+  }
+  .status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @keyframes pm-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

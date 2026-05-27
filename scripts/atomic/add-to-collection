@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Wrapper script for add_to_collection.py
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: ./scripts/add-to-collection <collection-name> <photo-path> [photo-path...]"
+  echo "Example: ./scripts/add-to-collection street /path/to/photo1.jpg /path/to/photo2.jpg"
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/add_to_collection.py" "$@"

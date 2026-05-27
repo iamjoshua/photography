@@ -1,0 +1,61 @@
+---
+import type { PendingImport } from '../lib/imports';
+
+interface Props {
+  pendingImport: PendingImport;
+}
+
+const { pendingImport: p } = Astro.props;
+
+const sizeKb = Math.round(p.size / 1024);
+const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+---
+
+<article class="import-tile">
+  <div class="thumb">
+    <img src={`/api/img/import/${p.id}`} alt="" loading="lazy" />
+  </div>
+  <div class="meta">
+    <div class="filename" title={p.filename}>{p.filename}</div>
+    <div class="size">{sizeLabel}</div>
+  </div>
+</article>
+
+<style>
+  .import-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .thumb {
+    aspect-ratio: 3 / 2;
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px dashed var(--border-strong);
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .meta {
+    padding: 0 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .filename {
+    font-size: 12px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .size {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+</style>

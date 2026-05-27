@@ -1,0 +1,181 @@
+---
+import Layout from '../../components/Layout.astro';
+---
+
+<Layout title="New collection">
+  <header class="head">
+    <h1>New collection</h1>
+    <p class="sub">
+      Defines a new YAML at <code>data/collections/&lt;name&gt;.yaml</code>.
+      Filters are optional — leave blank to manage photos manually.
+    </p>
+  </header>
+
+  <form id="form" class="form">
+    <label>
+      <span>Name <small>(slug, becomes the yaml filename)</small></span>
+      <input name="name" required pattern="[a-z0-9-]+" placeholder="seattle-pics" autocomplete="off" autofocus />
+    </label>
+    <label>
+      <span>Title</span>
+      <input name="title" required placeholder="Seattle Pics" autocomplete="off" />
+    </label>
+    <label>
+      <span>Description</span>
+      <textarea name="description" rows="3" placeholder="Optional"></textarea>
+    </label>
+
+    <fieldset>
+      <legend>Filters</legend>
+      <div class="grid-2">
+        <label>
+          <span>Keywords</span>
+          <input name="keywords" placeholder="nature, sunset" autocomplete="off" />
+        </label>
+        <label>
+          <span>Location</span>
+          <input name="location" placeholder="Seattle" autocomplete="off" />
+        </label>
+        <label>
+          <span>Rating</span>
+          <input name="rating" placeholder="4+" autocomplete="off" />
+        </label>
+        <label>
+          <span>Date</span>
+          <input name="date" placeholder="2025" autocomplete="off" />
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" id="submit">Create</button>
+      <a href="/" class="cancel">Cancel</a>
+      <span id="status" class="status"></span>
+    </div>
+  </form>
+
+  <script>
+    const form = document.getElementById('form') as HTMLFormElement;
+    const status = document.getElementById('status')!;
+    const submit = document.getElementById('submit') as HTMLButtonElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submit.disabled = true;
+      status.textContent = 'Creating…';
+      const data = Object.fromEntries(new FormData(form));
+      const res = await fetch('/api/collections/create', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const out = await res.json();
+        location.href = `/collections/${out.name}`;
+      } else {
+        status.textContent = '';
+        submit.disabled = false;
+        alert(`Create failed:\n\n${await res.text()}`);
+      }
+    });
+  </script>
+</Layout>
+
+<style>
+  .head { margin-bottom: 24px; max-width: 560px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .sub {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .sub code {
+    font-family: ui-monospace, SF Mono, Menlo, monospace;
+    font-size: 12px;
+    background: var(--surface);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .form {
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label > span {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  label > span small {
+    font-weight: 400;
+    color: var(--text-faint);
+    margin-left: 4px;
+  }
+  input,
+  textarea {
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color var(--transition);
+  }
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; }
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px 16px;
+    margin: 0;
+  }
+  legend {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  button[type='submit'] {
+    font: inherit;
+    padding: 8px 16px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity var(--transition);
+  }
+  button[type='submit']:hover { opacity: 0.85; }
+  button[type='submit']:disabled { opacity: 0.5; cursor: wait; }
+  .cancel {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .cancel:hover { color: var(--text); }
+  .status {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>

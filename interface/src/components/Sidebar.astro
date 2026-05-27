@@ -1,0 +1,233 @@
+---
+import type { Collection } from '../types';
+
+interface Props {
+  collections: Collection[];
+  activeCollection?: string;
+  activeRoot: 'all' | 'collection' | 'imports';
+  importsCount: number;
+}
+
+const { collections, activeCollection, activeRoot, importsCount } = Astro.props;
+---
+
+<aside class="sidebar">
+  <div class="brand">photography</div>
+
+  <nav class="nav">
+    <a
+      href="/"
+      class:list={['nav-item', activeRoot === 'all' && 'active']}
+    >
+      <span class="dot"></span>
+      <span class="label">All photos</span>
+    </a>
+    <a
+      href="/imports"
+      class:list={['nav-item', activeRoot === 'imports' && 'active']}
+    >
+      <span class="dot"></span>
+      <span class="label">Imports</span>
+      <span
+        class:list={['count', 'imports-count', importsCount > 0 && 'pending']}
+        data-imports-count
+      >{importsCount}</span>
+    </a>
+  </nav>
+
+  <div class="section">
+    <div class="section-head">
+      <span>Collections</span>
+      <a href="/collections/new" class="btn-icon" title="New collection" aria-label="New collection">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+      </a>
+    </div>
+    <nav class="nav">
+      {
+        collections.length === 0 && (
+          <div class="empty">No collections yet.</div>
+        )
+      }
+      {
+        collections.map((c) => (
+          <a
+            href={`/collections/${c.name}`}
+            class:list={['nav-item', activeCollection === c.name && 'active']}
+          >
+            <span class="dot" />
+            <span class="label">{c.title || c.name}</span>
+            <span class="count">{c.photos.length}</span>
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="footer">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+      <span class="seg seg-light">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="8" cy="8" r="3" />
+          <path d="M8 1.5v1.5M8 13v1.5M1.5 8h1.5M13 8h1.5M3.3 3.3l1 1M11.7 11.7l1 1M3.3 12.7l1-1M11.7 4.3l1-1" />
+        </svg>
+        Light
+      </span>
+      <span class="seg seg-dark">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+          <path d="M13 9.5A5.5 5.5 0 1 1 6.5 3a4.5 4.5 0 0 0 6.5 6.5z" />
+        </svg>
+        Dark
+      </span>
+    </button>
+  </div>
+</aside>
+
+<script>
+  import { initThemeToggle } from './ThemeToggle';
+  initThemeToggle();
+</script>
+
+<style>
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--bg-elevated);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 0 12px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand {
+    padding: 4px 18px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px;
+    gap: 1px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: background var(--transition), color var(--transition);
+    min-width: 0;
+  }
+  .nav-item:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .nav-item.active {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .nav-item .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    flex-shrink: 0;
+    transition: background var(--transition);
+  }
+  .nav-item.active .dot {
+    background: var(--accent);
+  }
+  .nav-item .label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nav-item .count {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-item .imports-count.pending {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .section {
+    margin-top: 22px;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+  .btn-icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--text-faint);
+    transition: background var(--transition), color var(--transition);
+  }
+  .btn-icon:hover {
+    background: var(--surface);
+    color: var(--text);
+  }
+  .empty {
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-style: italic;
+  }
+  .spacer {
+    flex: 1;
+  }
+  .footer {
+    padding: 8px 12px 0;
+  }
+  .theme-toggle {
+    all: unset;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .theme-toggle .seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 4px;
+    font-size: 12px;
+    color: var(--text-faint);
+    transition: background var(--transition), color var(--transition);
+  }
+  :root[data-theme='light'] .theme-toggle .seg-light,
+  :root[data-theme='dark'] .theme-toggle .seg-dark {
+    background: var(--surface);
+    color: var(--text);
+  }
+</style>

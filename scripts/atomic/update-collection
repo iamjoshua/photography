@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Patch a collection's title and/or description.
+#
+# Usage:
+#   ./scripts/update-collection <collection-name> [--title T] [--description D]
+
+if [ -z "$1" ]; then
+  echo "Usage: ./scripts/update-collection <collection-name> [--title T] [--description D]"
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/update_collection.py" "$@"

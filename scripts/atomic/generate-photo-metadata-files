@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Generate YAML metadata files for all photos
+# Usage: ./scripts/generate-photo-metadata-files [--dry-run]
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/generate_photo_metadata_files.py" "$@"

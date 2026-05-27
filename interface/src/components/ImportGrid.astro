@@ -1,0 +1,22 @@
+---
+import ImportCard from './ImportCard.astro';
+import type { PendingImport } from '../lib/imports';
+
+interface Props {
+  imports: PendingImport[];
+}
+
+const { imports } = Astro.props;
+---
+
+<div class="grid">
+  {imports.map((p) => <ImportCard pendingImport={p} />)}
+</div>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 22px 18px;
+  }
+</style>

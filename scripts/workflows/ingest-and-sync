@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Workflow: ingest photos from photos/imports/, optionally add to a
+# collection, generate metadata, build r2/ variants, and sync to R2.
+#
+# Composes atomic scripts only.
+#
+# Usage:
+#   ./scripts/workflows/ingest-and-sync                       # ingest, no collection
+#   ./scripts/workflows/ingest-and-sync --collection NAME     # ingest + add to NAME
+
+set -e
+
+COLLECTION=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --collection)
+      if [[ -z "$2" ]]; then
+        echo "Error: --collection requires a name" >&2
+        exit 1
+      fi
+      COLLECTION="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      echo "Usage: $0 [--collection NAME]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ATOMIC="$REPO_ROOT/scripts/atomic"
+
+if [[ -n "$COLLECTION" ]]; then
+  echo "Workflow: ingest-and-sync (collection: $COLLECTION)"
+else
+  echo "Workflow: ingest-and-sync (no collection)"
+fi
+echo "============================================================"
+
+INGESTED_PATHS_FILE="$(mktemp)"
+trap 'rm -f "$INGESTED_PATHS_FILE"' EXIT
+
+echo ""
+echo "--- ingest-photos ---"
+"$ATOMIC/ingest-photos" --output-paths "$INGESTED_PATHS_FILE"
+
+if [[ -n "$COLLECTION" && -s "$INGESTED_PATHS_FILE" ]]; then
+  echo ""
+  echo "--- add-to-collection ($COLLECTION) ---"
+  while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    "$ATOMIC/add-to-collection" "$COLLECTION" "$path"
+  done < "$INGESTED_PATHS_FILE"
+fi
+
+echo ""
+echo "--- generate-photo-metadata-files ---"
+"$ATOMIC/generate-photo-metadata-files"
+
+echo ""
+echo "--- build-r2 ---"
+"$ATOMIC/build-r2"
+
+echo ""
+echo "--- sync-to-r2 ---"
+"$ATOMIC/sync-to-r2"
+
+echo ""
+echo "============================================================"
+echo "Workflow complete."

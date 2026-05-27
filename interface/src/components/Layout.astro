@@ -1,0 +1,68 @@
+---
+import '../styles/tokens.css';
+import '../styles/global.css';
+import Sidebar from './Sidebar.astro';
+import { listCollections } from '../lib/collections';
+import { listImports } from '../lib/imports';
+
+interface Props {
+  title?: string;
+  activeCollection?: string;
+  activeRoot?: 'all' | 'collection' | 'imports';
+}
+
+const {
+  title = 'photography',
+  activeCollection,
+  activeRoot = activeCollection ? 'collection' : 'all',
+} = Astro.props;
+
+const [collections, imports] = await Promise.all([
+  listCollections(),
+  listImports(),
+]);
+const importsCount = imports.length;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem('theme');
+        } catch (e) {}
+        document.documentElement.dataset.theme = stored === 'dark' ? 'dark' : 'light';
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <Sidebar
+        collections={collections}
+        activeCollection={activeCollection}
+        activeRoot={activeRoot}
+        importsCount={importsCount}
+      />
+      <main class="main">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: 100vh;
+  }
+  .main {
+    padding: 28px 36px 60px;
+    min-width: 0;
+  }
+</style>

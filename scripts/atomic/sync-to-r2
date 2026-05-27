@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Sync photos directory to Cloudflare R2
+#
+# Usage:
+#   ./scripts/sync-to-r2          # sync all of photos/
+#   ./scripts/sync-to-r2 dev      # sync photos/dev/ to dev/
+#   ./scripts/sync-to-r2 2025     # sync photos/2025/ to 2025/
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/utils/sync_to_r2.py" "$@"
