@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Patch a collection's title and/or description without touching its
-photos list or cover_path.
+Patch a collection's title, description, and/or cover_path without
+touching its photos list.
 
 Usage:
-    python3 scripts/utils/update_collection.py <collection-name> [--title T] [--description D]
+    python3 scripts/utils/update_collection.py <collection-name>
+        [--title T] [--description D] [--cover-path PATH]
 """
 
 import sys
@@ -16,16 +17,21 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Update a collection's title and/or description."
+        description="Update a collection's title, description, and/or cover_path."
     )
     parser.add_argument('collection_name', help='Name of the collection (yaml file basename)')
     parser.add_argument('--title', help='New title')
     parser.add_argument('--description', help='New description')
+    parser.add_argument('--cover-path', dest='cover_path',
+                        help='New cover_path (relative to photos/, e.g. 2025/.../foo.jpg)')
 
     args = parser.parse_args()
 
-    if args.title is None and args.description is None:
-        print("Error: provide at least one of --title or --description", file=sys.stderr)
+    if args.title is None and args.description is None and args.cover_path is None:
+        print(
+            "Error: provide at least one of --title, --description, or --cover-path",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     project_root = Path(__file__).resolve().parent.parent.parent.parent
@@ -42,6 +48,8 @@ def main():
         col['title'] = args.title
     if args.description is not None:
         col['description'] = args.description
+    if args.cover_path is not None:
+        col['cover_path'] = args.cover_path
 
     with open(col_file, 'w') as f:
         yaml.dump(col, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
@@ -51,6 +59,8 @@ def main():
         print(f"  title: {args.title}")
     if args.description is not None:
         print(f"  description: {args.description}")
+    if args.cover_path is not None:
+        print(f"  cover_path: {args.cover_path}")
 
 
 if __name__ == '__main__':

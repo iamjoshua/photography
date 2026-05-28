@@ -107,7 +107,7 @@ behind the two layers.
 | `sync-collection` | `scripts/atomic/` | `<name>` | `POST /api/collections/create` (when filters supplied) |
 | `add-to-collection` | `scripts/atomic/` | `<name> <photo-path>` | `POST /api/collections/[name]/add-photo` |
 | `remove-from-collection` | `scripts/atomic/` | `<name> <photo-path>` | `POST /api/collections/[name]/remove-photo` |
-| `update-collection` | `scripts/atomic/` | `<name> [--title T] [--description D]` | `POST /api/collections/[name]/update` |
+| `update-collection` | `scripts/atomic/` | `<name> [--title T] [--description D] [--cover-path PATH]` | `POST /api/collections/[name]/update` |
 | `delete-photo` | `scripts/atomic/` | `<photo-path>` | `POST /api/photos/delete` |
 | `ingest-and-sync` | `scripts/workflows/` | `[--collection NAME]` | `POST /api/imports/import` |
 
@@ -122,7 +122,8 @@ Cascade semantics for the destructive ones:
   entry from the named collection's yaml. The photo itself stays
   in the portfolio.
 - `update-collection <name>` — patch the named collection yaml's
-  `title` and/or `description` without touching its `photos:` list.
+  `title`, `description`, and/or `cover_path` without touching its
+  `photos:` list.
 
 Behavior for the import flow:
 

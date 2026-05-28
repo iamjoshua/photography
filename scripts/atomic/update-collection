@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Patch a collection's title and/or description.
+# Patch a collection's title, description, and/or cover_path.
 #
 # Usage:
-#   ./scripts/update-collection <collection-name> [--title T] [--description D]
+#   ./scripts/atomic/update-collection <collection-name> \
+#       [--title T] [--description D] [--cover-path PATH]
 
 if [ -z "$1" ]; then
-  echo "Usage: ./scripts/update-collection <collection-name> [--title T] [--description D]"
+  echo "Usage: ./scripts/atomic/update-collection <collection-name> [--title T] [--description D] [--cover-path PATH]"
   exit 1
 fi
 

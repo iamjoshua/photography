@@ -5,9 +5,12 @@ interface Props {
   photo: Photo;
   /** When set, this card is rendered inside a specific collection's view */
   collectionContext?: string;
+  /** When set, this collection's current cover_path — used to mark the cover photo */
+  coverPath?: string;
 }
 
-const { photo, collectionContext } = Astro.props;
+const { photo, collectionContext, coverPath } = Astro.props;
+const isCover = !!coverPath && coverPath === photo.path;
 
 const locParts = [
   photo.location?.sublocation,
@@ -24,6 +27,7 @@ const locText = locParts.join(', ');
   data-photo-filename={photo.filename}
   data-photo-collections={photo.collections.join(',')}
   data-collection-context={collectionContext ?? ''}
+  data-is-cover={isCover ? 'true' : null}
 >
   <button
     class="thumb"
@@ -46,6 +50,7 @@ const locText = locParts.join(', ');
         <span class="badge" title="No large variant generated">!</span>
       )
     }
+    <span class="cover-badge" aria-label="Collection cover">Cover</span>
   </button>
 
   <button
@@ -134,6 +139,25 @@ const locText = locParts.join(', ');
     align-items: center;
     justify-content: center;
     line-height: 1;
+  }
+  .cover-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: none;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: 999px;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+  .card[data-is-cover='true'] .cover-badge {
+    display: inline-flex;
   }
   .menu-btn {
     position: absolute;

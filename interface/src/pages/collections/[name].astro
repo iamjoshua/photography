@@ -38,6 +38,7 @@ const photos = allPhotos.filter((p) => memberIds.has(p.id));
   <PhotoGrid
     photos={photos}
     collectionContext={name}
+    coverPath={collection.cover_path}
     emptyText="No photos in this collection yet."
   />
 

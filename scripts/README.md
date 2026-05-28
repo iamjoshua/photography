@@ -21,9 +21,9 @@ Current atomics:
   collection.
 - `remove-from-collection <name> <photo-path>` — remove a photo from
   a single collection. Idempotent.
-- `update-collection <name> [--title T] [--description D]` — patch a
-  collection's title and/or description without touching its photos
-  list.
+- `update-collection <name> [--title T] [--description D] [--cover-path PATH]` —
+  patch a collection's title, description, and/or cover_path without
+  touching its photos list.
 - `delete-photo <photo-path>` — cascade-remove a photo across
   `photos/`, `data/photos/`, `r2/{small,large}/`, and every collection
   yaml. Idempotent.

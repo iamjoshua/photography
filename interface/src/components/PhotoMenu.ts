@@ -72,6 +72,12 @@ function renderMenu(card: HTMLElement): string {
     );
   }
 
+  if (inCollection && card.dataset.isCover !== 'true') {
+    items.push(
+      `<button class="pm-item" data-pm-action="set-cover">Set as cover</button>`,
+    );
+  }
+
   if (inCollection) {
     items.push(
       `<button class="pm-item" data-pm-action="remove-from-collection">Remove from collection</button>`,
@@ -325,6 +331,23 @@ async function performAction(action: string, card: HTMLElement): Promise<void> {
     });
     if (res.ok) card.remove();
     else alert(`Remove failed:\n\n${await res.text()}`);
+    return;
+  }
+
+  if (action === 'set-cover' && collection) {
+    const res = await fetch(`/api/collections/${collection}/update`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cover_path: photoPath }),
+    });
+    if (!res.ok) {
+      alert(`Set cover failed:\n\n${await res.text()}`);
+      return;
+    }
+    document
+      .querySelectorAll<HTMLElement>('.card[data-is-cover="true"]')
+      .forEach((c) => c.removeAttribute('data-is-cover'));
+    card.setAttribute('data-is-cover', 'true');
   }
 }
 

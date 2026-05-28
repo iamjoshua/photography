@@ -5,10 +5,11 @@ import type { Photo } from '../types';
 interface Props {
   photos: Photo[];
   collectionContext?: string;
+  coverPath?: string;
   emptyText?: string;
 }
 
-const { photos, collectionContext, emptyText = 'No photos.' } = Astro.props;
+const { photos, collectionContext, coverPath, emptyText = 'No photos.' } = Astro.props;
 ---
 
 {
@@ -17,7 +18,7 @@ const { photos, collectionContext, emptyText = 'No photos.' } = Astro.props;
   ) : (
     <div class="grid">
       {photos.map((p) => (
-        <PhotoCard photo={p} collectionContext={collectionContext} />
+        <PhotoCard photo={p} collectionContext={collectionContext} coverPath={coverPath} />
       ))}
     </div>
   )
