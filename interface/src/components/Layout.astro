@@ -4,11 +4,12 @@ import '../styles/global.css';
 import Sidebar from './Sidebar.astro';
 import { listCollections } from '../lib/collections';
 import { listImports } from '../lib/imports';
+import { listPhotos } from '../lib/catalog';
 
 interface Props {
   title?: string;
   activeCollection?: string;
-  activeRoot?: 'all' | 'collection' | 'imports';
+  activeRoot?: 'all' | 'collection' | 'imports' | 'orphans';
 }
 
 const {
@@ -17,11 +18,13 @@ const {
   activeRoot = activeCollection ? 'collection' : 'all',
 } = Astro.props;
 
-const [collections, imports] = await Promise.all([
+const [collections, imports, photos] = await Promise.all([
   listCollections(),
   listImports(),
+  listPhotos(),
 ]);
 const importsCount = imports.length;
+const orphansCount = photos.filter((p) => p.collections.length === 0).length;
 ---
 
 <!doctype html>
@@ -47,6 +50,7 @@ const importsCount = imports.length;
         activeCollection={activeCollection}
         activeRoot={activeRoot}
         importsCount={importsCount}
+        orphansCount={orphansCount}
       />
       <main class="main">
         <slot />

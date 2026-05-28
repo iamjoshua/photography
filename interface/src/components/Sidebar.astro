@@ -4,11 +4,12 @@ import type { Collection } from '../types';
 interface Props {
   collections: Collection[];
   activeCollection?: string;
-  activeRoot: 'all' | 'collection' | 'imports';
+  activeRoot: 'all' | 'collection' | 'imports' | 'orphans';
   importsCount: number;
+  orphansCount: number;
 }
 
-const { collections, activeCollection, activeRoot, importsCount } = Astro.props;
+const { collections, activeCollection, activeRoot, importsCount, orphansCount } = Astro.props;
 ---
 
 <aside class="sidebar">
@@ -21,6 +22,14 @@ const { collections, activeCollection, activeRoot, importsCount } = Astro.props;
     >
       <span class="dot"></span>
       <span class="label">All photos</span>
+    </a>
+    <a
+      href="/orphans"
+      class:list={['nav-item', activeRoot === 'orphans' && 'active']}
+    >
+      <span class="dot"></span>
+      <span class="label">Orphans</span>
+      <span class="count">{orphansCount}</span>
     </a>
     <a
       href="/imports"
