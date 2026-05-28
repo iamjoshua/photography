@@ -41,6 +41,12 @@ def generate_one(src_str: str, photos_root_str: str, r2_root_str: str) -> tuple[
     r2_root = Path(r2_root_str)
     rel = src.relative_to(photos_root)
     rel_webp = rel.with_suffix('.webp')
+
+    src_mtime = src.stat().st_mtime
+    out_paths = [r2_root / variant / rel_webp for variant in SIZES]
+    if all(o.exists() and o.stat().st_mtime >= src_mtime for o in out_paths):
+        return (str(rel), 'skip')
+
     try:
         with Image.open(src) as img:
             img = ImageOps.exif_transpose(img)
@@ -95,6 +101,7 @@ def main():
     print("-" * 80)
 
     ok = 0
+    skipped = 0
     failed = 0
     with ProcessPoolExecutor() as ex:
         futures = {
@@ -106,14 +113,19 @@ def main():
             if status == 'ok':
                 ok += 1
                 print(f"  [{i}/{len(sources)}] ✓ {rel}")
+            elif status == 'skip':
+                skipped += 1
+                print(f"  [{i}/{len(sources)}] · skip (up to date)  {rel}")
             else:
                 failed += 1
                 print(f"  [{i}/{len(sources)}] ✗ {rel}  {status}", file=sys.stderr)
 
     print("-" * 80)
     print(f"Generated: {ok}")
+    if skipped:
+        print(f"Skipped:   {skipped} (already up to date)")
     if failed:
-        print(f"Failed: {failed}")
+        print(f"Failed:    {failed}")
 
 
 if __name__ == '__main__':
