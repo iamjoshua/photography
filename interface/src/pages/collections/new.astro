@@ -13,12 +13,12 @@ import Layout from '../../components/Layout.astro';
 
   <form id="form" class="form">
     <label>
-      <span>Name <small>(slug, becomes the yaml filename)</small></span>
-      <input name="name" required pattern="[a-z0-9-]+" placeholder="seattle-pics" autocomplete="off" autofocus />
+      <span>Title</span>
+      <input name="title" required placeholder="Seattle Pics" autocomplete="off" autofocus />
     </label>
     <label>
-      <span>Title</span>
-      <input name="title" required placeholder="Seattle Pics" autocomplete="off" />
+      <span>Name <small>(slug, becomes the yaml filename and URL — auto-derived from title; clear to resync)</small></span>
+      <input name="name" required pattern="[a-z0-9-]+" placeholder="seattle-pics" autocomplete="off" />
     </label>
     <label>
       <span>Description</span>
@@ -58,9 +58,78 @@ import Layout from '../../components/Layout.astro';
     const form = document.getElementById('form') as HTMLFormElement;
     const status = document.getElementById('status')!;
     const submit = document.getElementById('submit') as HTMLButtonElement;
+    const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+    const nameInput = form.elements.namedItem('name') as HTMLInputElement;
+
+    // Final slug form (no trailing hyphens) — used for title→name auto-fill
+    // and submit-time safety.
+    function slugify(s: string): string {
+      return s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    // Live slug form for use while the user is typing into Name. Preserves
+    // a trailing hyphen so "hamilton " visibly becomes "hamilton-" instead
+    // of swallowing the just-typed space.
+    function slugifyLive(s: string): string {
+      return s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+/, '');
+    }
+
+    // Name auto-derives from title until the user manually overrides it.
+    // Clearing the name field re-enables auto-derivation.
+    let nameManual = false;
+
+    titleInput.addEventListener('input', () => {
+      if (!nameManual) {
+        nameInput.value = slugify(titleInput.value);
+      }
+    });
+
+    nameInput.addEventListener('input', () => {
+      const raw = nameInput.value;
+      const cleaned = slugifyLive(raw);
+      if (raw !== cleaned) {
+        const atEnd = nameInput.selectionStart === raw.length;
+        nameInput.value = cleaned;
+        if (atEnd) nameInput.setSelectionRange(cleaned.length, cleaned.length);
+      }
+      if (nameInput.value === '') {
+        nameManual = false;
+        return;
+      }
+      if (nameInput.value !== slugify(titleInput.value)) {
+        nameManual = true;
+      }
+    });
+
+    // On blur, collapse the trailing hyphen (if any) to the final slug form.
+    // If Name was left empty, refill from the current Title (and re-enable
+    // auto-sync since the user clearly didn't want a custom slug).
+    nameInput.addEventListener('blur', () => {
+      if (nameInput.value === '' && titleInput.value !== '') {
+        nameInput.value = slugify(titleInput.value);
+        nameManual = false;
+        return;
+      }
+      nameInput.value = slugify(nameInput.value);
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      // Safety net: if name was cleared and never refilled, derive on submit.
+      if (!nameInput.value && titleInput.value) {
+        nameInput.value = slugify(titleInput.value);
+      }
       submit.disabled = true;
       status.textContent = 'Creating…';
       const data = Object.fromEntries(new FormData(form));
